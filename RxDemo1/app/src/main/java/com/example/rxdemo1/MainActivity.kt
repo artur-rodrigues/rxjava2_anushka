@@ -13,11 +13,11 @@ import io.reactivex.schedulers.Schedulers
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityMainBinding
 
     private val greeting = "HelloFrom RxJava"
-    lateinit var observable: Observable<String>
-    lateinit var observer: DisposableObserver<String>
+    private lateinit var observable: Observable<String>
+    private lateinit var observer: DisposableObserver<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
