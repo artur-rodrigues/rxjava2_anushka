@@ -6,15 +6,18 @@ import androidx.databinding.DataBindingUtil
 import com.example.rxdemo1.databinding.ActivityMainBinding
 import io.reactivex.Observable
 import io.reactivex.Observer
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.reactivex.observers.DisposableObserver
+import io.reactivex.schedulers.Schedulers
 
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
 
-    val greeting = "HelloFrom RxJava"
+    private val greeting = "HelloFrom RxJava"
     lateinit var observable: Observable<String>
-    lateinit var observer: Observer<String>
+    lateinit var observer: DisposableObserver<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,13 +28,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpObservers() {
-        observer = object : Observer<String> {
+        observer = object : DisposableObserver<String>() {
             override fun onComplete() {
                 log("onComplete()")
-            }
-
-            override fun onSubscribe(d: Disposable) {
-                log("onSubscribe()")
             }
 
             override fun onNext(t: String) {
@@ -44,11 +43,22 @@ class MainActivity : AppCompatActivity() {
             }
 
         }
+
         observable = Observable.just(greeting)
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
         observable.subscribe(observer)
     }
 
     private fun setUpBinding() {
 
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        if (! observer.isDisposed) {
+            observer.dispose()
+        }
     }
 }
