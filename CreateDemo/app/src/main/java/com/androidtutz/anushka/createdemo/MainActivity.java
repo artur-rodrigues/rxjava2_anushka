@@ -29,6 +29,20 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        myObservable = Observable.create(emitter -> {
+            for (Student student : getStudents()) {
+                emitter.onNext(student);
+            }
+
+            emitter.onComplete();
+        });
+
+        compositeDisposable.add(
+                myObservable.subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeWith(getObserver())
+        );
+
     }
 
     private DisposableObserver getObserver() {
@@ -36,8 +50,6 @@ public class MainActivity extends AppCompatActivity {
         myObserver = new DisposableObserver<Student>() {
             @Override
             public void onNext(Student s) {
-
-
                 Log.i(TAG, " onNext invoked with " + s.getEmail());
             }
 
@@ -63,35 +75,14 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayList<Student> students = new ArrayList<>();
 
-        Student student1 = new Student();
-        student1.setName(" student 1");
-        student1.setEmail(" student1@gmail.com ");
-        student1.setAge(27);
-        students.add(student1);
-
-        Student student2 = new Student();
-        student2.setName(" student 2");
-        student2.setEmail(" student2@gmail.com ");
-        student2.setAge(20);
-        students.add(student2);
-
-        Student student3 = new Student();
-        student3.setName(" student 3");
-        student3.setEmail(" student3@gmail.com ");
-        student3.setAge(20);
-        students.add(student3);
-
-        Student student4 = new Student();
-        student4.setName(" student 4");
-        student4.setEmail(" student4@gmail.com ");
-        student4.setAge(20);
-        students.add(student4);
-
-        Student student5 = new Student();
-        student5.setName(" student 5");
-        student5.setEmail(" student5@gmail.com ");
-        student5.setAge(20);
-        students.add(student5);
+        for(int i = 1; i <= 5; i++) {
+            int finalI = i;
+            students.add(new Student() {{
+                setName(" student " + finalI);
+                setEmail(" student" + finalI + "@gmail.com ");
+                setAge(20 + finalI);
+            }});
+        }
 
         return students;
 
