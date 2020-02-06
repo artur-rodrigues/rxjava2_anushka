@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
 
     private final static String TAG = "myApp";
     private Observable<Student> myObservable;
-    private DisposableObserver<Student> myObserver;
+    private DisposableObserver<String> myObserver;
 
 
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
@@ -31,49 +31,27 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        myObservable = Observable.create(new ObservableOnSubscribe<Student>() {
-            @Override
-            public void subscribe(ObservableEmitter<Student> emitter) throws Exception {
-
-
-                ArrayList<Student> studentArrayList = getStudents();
-
-                for (Student student : studentArrayList) {
-
-
-                    emitter.onNext(student);
-
-                }
-
-                emitter.onComplete();
-
-
+        myObservable = Observable.create(emitter -> {
+            for (Student student : getStudents()) {
+                emitter.onNext(student);
             }
+            emitter.onComplete();
         });
 
         compositeDisposable.add(
-
                 myObservable
                         .subscribeOn(Schedulers.io())
                         .observeOn(AndroidSchedulers.mainThread())
+                        .map(student -> student.getName())
                         .subscribeWith(getObserver())
-
         );
-
-
     }
 
-
     private DisposableObserver getObserver() {
-
-        myObserver = new DisposableObserver<Student>() {
+        myObserver = new DisposableObserver<String>() {
             @Override
-            public void onNext(Student s) {
-
-
-                Log.i(TAG,  s.getName());
-
-
+            public void onNext(String s) {
+                Log.i(TAG,  s);
             }
 
             @Override
@@ -85,7 +63,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onComplete() {
-
                 Log.i(TAG, " onComplete invoked");
             }
         };
@@ -95,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     private ArrayList<Student> getStudents() {
-
         ArrayList<Student> students = new ArrayList<>();
 
         Student student1 = new Student();
@@ -129,8 +105,6 @@ public class MainActivity extends AppCompatActivity {
         students.add(student5);
 
         return students;
-
-
     }
 
     @Override
@@ -138,6 +112,4 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         compositeDisposable.clear();
     }
-
-
 }
