@@ -49,15 +49,14 @@ public class MainActivity extends AppCompatActivity {
 
     private DisposableObserver getObserver() {
         myObserver = new DisposableObserver<String>() {
+
             @Override
             public void onNext(String s) {
                 Log.i(TAG,  s);
             }
 
             @Override
-            public void onError(Throwable e)
-
-            {
+            public void onError(Throwable e) {
                 Log.i(TAG, " onError invoked");
             }
 
