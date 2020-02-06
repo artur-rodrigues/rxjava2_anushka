@@ -9,12 +9,20 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.jakewharton.rxbinding2.view.RxView;
+import com.jakewharton.rxbinding2.widget.RxTextView;
+
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+
 
 public class MainActivity extends AppCompatActivity {
 
     private EditText inputText;
     private TextView viewText;
     private Button clearButton;
+
+    private CompositeDisposable disposable = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,5 +33,26 @@ public class MainActivity extends AppCompatActivity {
         viewText = findViewById(R.id.tvInput);
         clearButton = findViewById(R.id.btnClear);
 
+        disposable.add(
+                RxTextView.textChanges(inputText)
+                        .subscribe(consumer -> viewText.setText(consumer))
+        );
+
+        disposable.add(
+                RxView.clicks(clearButton)
+                .subscribe(consumer -> {
+                    viewText.setText("");
+                    inputText.setText("");
+                })
+        );
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if(! disposable.isDisposed()) {
+            disposable.dispose();
+        }
     }
 }
