@@ -13,6 +13,8 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,9 +26,19 @@ import com.example.androidtutz.todolistapp.adapter.ToDoListAdapter;
 import com.example.androidtutz.todolistapp.adapter.RecyclerTouchListener;
 import com.example.androidtutz.todolistapp.data.ToDoListItem;
 import com.example.androidtutz.todolistapp.data.ToDoDataManager;
+import com.jakewharton.rxbinding2.widget.RxTextView;
+import com.jakewharton.rxbinding2.widget.TextViewTextChangeEvent;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.observers.DisposableObserver;
+import io.reactivex.schedulers.Schedulers;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -63,6 +75,7 @@ public class TodolistFragment extends Fragment {
     private View view;
     private TextView searchEditText;
 
+    private CompositeDisposable disposable = new CompositeDisposable();
 
 
     public TodolistFragment() {
@@ -112,52 +125,50 @@ public class TodolistFragment extends Fragment {
 
 
         if (Integer.parseInt(mParam1) == 0) {
-
-
             taskStatus = "Achieving";
             dateFront = "Will be achieved by";
-
         } else {
-
-
             taskStatus = "Achieved";
-            dateFront = "Successfully achieved by";
+            dateFront = "Successfully achieved on";
         }
-
 
         //set fab
         fabAddNewToDo.setImageResource(R.drawable.ic_add_white);
-        fabAddNewToDo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-
-                if (Integer.parseInt(mParam1) == 0) {
-
-                    Intent add_new_intent = new Intent(getContext(), AddToDoActivity.class);
-                    add_new_intent.putExtra("status", "Achieving");
-                    startActivity(add_new_intent);
-
-
-                } else {
-
-                    Intent add_new_intent = new Intent(getContext(), AddToDoActivity.class);
-                    add_new_intent.putExtra("status", "Achieved");
-                    startActivity(add_new_intent);
-
-                }
-
-
+        fabAddNewToDo.setOnClickListener(view -> {
+            if (Integer.parseInt(mParam1) == 0) {
+                Intent add_new_intent = new Intent(getContext(), AddToDoActivity.class);
+                add_new_intent.putExtra("status", "Achieving");
+                startActivity(add_new_intent);
+            } else {
+                Intent add_new_intent = new Intent(getContext(), AddToDoActivity.class);
+                add_new_intent.putExtra("status", "Achieved");
+                startActivity(add_new_intent);
             }
         });
 
+        Disposable disposable = RxTextView.textChangeEvents(searchEditText)
+                .skipInitialValue()
+                .debounce(300, TimeUnit.MILLISECONDS)
+                .distinctUntilChanged()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableObserver<TextViewTextChangeEvent>() {
+                    @Override
+                    public void onNext(TextViewTextChangeEvent textViewTextChangeEvent) {
+                        goalAdapter.getFilter().filter(textViewTextChangeEvent.text());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {}
+
+                    @Override
+                    public void onComplete() {}
+                });
+
+        this.disposable.add(disposable);
 
         setRecyclerView();
         loadData();
-
-
-
-
 
         return view;
 
@@ -213,7 +224,6 @@ public class TodolistFragment extends Fragment {
                 editor.putString("goal_id", Integer.toString(goal.getToDoListItemId()));
                 editor.putString("status", "0");
                 editor.commit();
-
             }
 
             @Override
@@ -223,88 +233,80 @@ public class TodolistFragment extends Fragment {
         }));
 
         recyclerViewAchievingGoals.setAdapter(goalAdapter);
-
-
     }
 
     private void loadData() {
+        disposable.add(Observable
+                .fromArray(toDoDataManager.getAllToDoListItem_list().toArray(new ToDoListItem[0]))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .filter(predicate -> predicate.getToDoListItemStatus().equals(taskStatus))
+                .map(toDoListItem -> {
+                    toDoListItem.setToDoListItemDescription(dateFront + " " + toDoListItem.getToDoListItemPlanedAchievDate());
+                    return toDoListItem;
+                })
+                .subscribeWith(new DisposableObserver<ToDoListItem>() {
+                    @Override
+                    public void onNext(ToDoListItem toDoListItem) {
+                        goalsList.add(toDoListItem);
+                    }
 
+                    @Override
+                    public void onError(Throwable e) {
 
+                    }
 
-
-
+                    @Override
+                    public void onComplete() {
+                        goalAdapter.notifyDataSetChanged();
+                    }
+                })
+        );
     }
 
-
     public void markAsAchieved(int position) {
-
-
         if (Integer.parseInt(mParam1) == 0) {
-
-
             ToDoListItem goal = goalsList.get(position);
             goal.setToDoListItemStatus("Achieved");
             toDoDataManager.updateToDoListItem(goal);
             goalsList.remove(position);
-
             goalAdapter.notifyDataSetChanged();
-
             Toast.makeText(getActivity(), "Marked as achieved", Toast.LENGTH_LONG).show();
-
         } else {
-
-
             ToDoListItem goal = goalsList.get(position);
             goal.setToDoListItemStatus("Achieving");
             toDoDataManager.updateToDoListItem(goal);
             goalsList.remove(position);
-
             goalAdapter.notifyDataSetChanged();
-
             Toast.makeText(getActivity(), "Marked as not achieved", Toast.LENGTH_LONG).show();
         }
-
-
     }
 
     @Override
     public void setUserVisibleHint(boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
         if (isVisibleToUser) {
-
-
             if (recyclerViewAchievingGoals != null) {
                 goalsList.clear();
                 setRecyclerView();
                 loadData();
-
             }
-
         }
     }
 
     public void viewListWithButtons(int position) {
-
-
         ToDoListItem goal = goalsList.get(position);
         goal.setToDoListItemBackgroundColor("1");
         goalAdapter.notifyItemChanged(position);
-
-
     }
 
     public void closeButtonsRow(int position) {
-
-
         ToDoListItem goal = goalsList.get(position);
         goal.setToDoListItemBackgroundColor("0");
         goalAdapter.notifyItemChanged(position);
-
-
     }
 
     public void deleteRow(int position) {
-
         final int selctedPosition = position;
 
         final Dialog dialog = new Dialog(getActivity());
@@ -312,49 +314,42 @@ public class TodolistFragment extends Fragment {
         dialog.setContentView(R.layout.dialog_demo);
         dialog.setTitle("");
 
-        Button dialogButtonCancel = (Button) dialog.findViewById(R.id.dialog_cancel);
-        Button dialogButtonOk = (Button) dialog.findViewById(R.id.dialog_ok);
+        Button dialogButtonCancel = dialog.findViewById(R.id.dialog_cancel);
+        Button dialogButtonOk = dialog.findViewById(R.id.dialog_ok);
         dialogButtonOk.setText("Delete!");
 
-        TextView dialogDesc = (TextView) dialog.findViewById(R.id.dialog_message);
+        TextView dialogDesc = dialog.findViewById(R.id.dialog_message);
 
         dialogDesc.setText("Are you sure?");
 
-        dialogButtonCancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                dialog.dismiss();
-            }
-        });
+        dialogButtonCancel.setOnClickListener(v -> dialog.dismiss());
 
-        dialogButtonOk.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                ToDoListItem goal = goalsList.get(selctedPosition);
-                toDoDataManager.deleteToDoListItem(goal);
-                goalsList.remove(selctedPosition);
-                dialog.dismiss();
-                goalAdapter.notifyDataSetChanged();
-                Toast.makeText(getActivity(), "Deleted successfully", Toast.LENGTH_LONG).show();
-            }
+        dialogButtonOk.setOnClickListener(v -> {
+            ToDoListItem goal = goalsList.get(selctedPosition);
+            toDoDataManager.deleteToDoListItem(goal);
+            goalsList.remove(selctedPosition);
+            dialog.dismiss();
+            goalAdapter.notifyDataSetChanged();
+            Toast.makeText(getActivity(), "Deleted successfully", Toast.LENGTH_LONG).show();
         });
 
         dialog.show();
-
     }
 
     public void viewUpdateFragment(int position) {
-
         ToDoListItem goal = goalsList.get(position);
         String content = goal.getToDoListItemName();
 
         FragmentManager oFragmentManager = getActivity().getSupportFragmentManager();
         UpdateToDoFragment updateTasksFragment = UpdateToDoFragment.newInstance(content, 0, TodolistFragment.this, goal);
         updateTasksFragment.show(oFragmentManager, "Sample Fragment");
-
     }
 
-
-
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (! disposable.isDisposed()) {
+            disposable.dispose();
+        }
+    }
 }

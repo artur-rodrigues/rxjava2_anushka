@@ -1,11 +1,8 @@
 package com.example.androidtutz.todolistapp.adapter;
 
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,7 +13,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.androidtutz.todolistapp.R;
-import com.example.androidtutz.todolistapp.ToDoMainActivity;
 import com.example.androidtutz.todolistapp.TodolistFragment;
 import com.example.androidtutz.todolistapp.data.ToDoListItem;
 
@@ -34,61 +30,37 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.MyView
     private List<ToDoListItem> todolistFiltered;
     private int type;
     private int goal_category_id;
-    public TodolistFragment todoFragment;
-
+    private TodolistFragment todoFragment;
 
     public ToDoListAdapter(List<ToDoListItem> toDoListItems, int type, Fragment fragment) {
-
         this.todolist = toDoListItems;
         this.todolistFiltered = toDoListItems;
         this.type = type;
         this.todoFragment = (TodolistFragment) fragment;
-
-
     }
-
 
     @Override
     public ToDoListAdapter.MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-
-
         View itemView = LayoutInflater.from(parent.getContext()).inflate(R.layout.view_goallist_list_item, parent, false);
         SharedPreferences prefs = parent.getContext().getSharedPreferences("BackTarget", MODE_PRIVATE);
         goal_category_id = prefs.getInt("goal_category_id", 1);//"No name defined" is the default value.
-
         return new MyViewHolder(itemView);
     }
 
     @Override
     public void onBindViewHolder(ToDoListAdapter.MyViewHolder holder, int position) {
-
         ToDoListItem item = todolistFiltered.get(position);
         holder.name.setText(item.getToDoListItemName());
 
-
         holder.date.setText(item.getToDoListItemDescription());
 
-
         if (item.getToDoListItemBackgroundColor() != null) {
-
             if (Integer.parseInt(item.getToDoListItemBackgroundColor()) == 1) {
-
-
                 holder.buttonsLayout.setVisibility(View.VISIBLE);
-
-
             } else {
-
                 holder.buttonsLayout.setVisibility(View.INVISIBLE);
-
             }
-
-        } else {
-
-
         }
-
-
     }
 
     @Override
@@ -107,12 +79,10 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.MyView
                 } else {
                     List<ToDoListItem> filteredList = new ArrayList<>();
                     for (ToDoListItem item : todolist) {
-
                         if (item.getToDoListItemName().toLowerCase().contains(charString.toLowerCase())) {
                             filteredList.add(item);
                         }
                     }
-
                     todolistFiltered = filteredList;
                 }
 
@@ -129,15 +99,13 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.MyView
         };
     }
 
-
     public class MyViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public TextView name, date;
-        public ImageButton achievedButton;
-        public ImageButton button, closeButton, deleteButton, editButton;
-        public LinearLayout buttonsLayout;
+        TextView name, date;
+        ImageButton achievedButton;
+        ImageButton button, closeButton, deleteButton, editButton;
+        LinearLayout buttonsLayout;
 
-
-        public MyViewHolder(View view) {
+        MyViewHolder(View view) {
             super(view);
             name = view.findViewById(R.id.tvGoallistName);
             date = view.findViewById(R.id.tvGoalListAchieveDate);
@@ -155,48 +123,21 @@ public class ToDoListAdapter extends RecyclerView.Adapter<ToDoListAdapter.MyView
             deleteButton.setOnClickListener(this);
             editButton.setOnClickListener(this);
             name.setOnClickListener(this);
-
-
         }
-
 
         @Override
         public void onClick(View v) {
-
             if (v == button) {
-
-
                 todoFragment.markAsAchieved(getAdapterPosition());
-
-
             } else if (v == deleteButton) {
-
-
                 todoFragment.deleteRow(getAdapterPosition());
-
-
             } else if (v == closeButton) {
-
-
                 todoFragment.closeButtonsRow(getAdapterPosition());
-
-
             } else if (v == editButton) {
-
-
                 todoFragment.viewUpdateFragment(getAdapterPosition());
-
-
             } else {
-
-
                 todoFragment.viewListWithButtons(getAdapterPosition());
-
-
             }
-
         }
     }
-
-
 }
