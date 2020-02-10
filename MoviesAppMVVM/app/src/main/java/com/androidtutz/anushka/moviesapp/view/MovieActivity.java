@@ -34,7 +34,6 @@ public class MovieActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         initCollapsingToolbar();
@@ -46,7 +45,6 @@ public class MovieActivity extends AppCompatActivity {
         movieReleaseDate = findViewById(R.id.tvReleaseDate);
         ratingBar = findViewById(R.id.ratingBar);
         rateButton = findViewById(R.id.btnRating);
-
 
         Intent intentThatStartedThisActivity = getIntent();
         if (intentThatStartedThisActivity.hasExtra("movie")) {
@@ -79,13 +77,11 @@ public class MovieActivity extends AppCompatActivity {
 
     }
 
-
     private void initCollapsingToolbar() {
-
         final CollapsingToolbarLayout collapsingToolbarLayout =
-                (CollapsingToolbarLayout) findViewById(R.id.ctbMovie);
+                findViewById(R.id.ctbMovie);
         collapsingToolbarLayout.setTitle(" ");
-        AppBarLayout appBarLayout = (AppBarLayout) findViewById(R.id.movieAppbar);
+        AppBarLayout appBarLayout = findViewById(R.id.movieAppbar);
         appBarLayout.setExpanded(true);
 
         appBarLayout.addOnOffsetChangedListener(new AppBarLayout.OnOffsetChangedListener() {
@@ -108,6 +104,4 @@ public class MovieActivity extends AppCompatActivity {
             }
         });
     }
-
-
 }

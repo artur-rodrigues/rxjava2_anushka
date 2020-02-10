@@ -12,9 +12,6 @@ import retrofit2.http.Query;
  */
 public interface MoviesDataService {
 
-
     @GET("movie/popular")
     Observable<MovieDBResponse> getPopularMoviesWithRx(@Query("api_key") String apiKey);
-
-
 }

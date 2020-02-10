@@ -17,6 +17,7 @@ import com.androidtutz.anushka.moviesapp.view.MovieActivity;
 import com.bumptech.glide.Glide;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by K. A. ANUSHKA MADUSANKA on 7/4/2018.
@@ -24,9 +25,9 @@ import java.util.ArrayList;
 public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieViewHolder>{
 
     private Context context;
-    private ArrayList<Movie> movies;
+    private List<Movie> movies;
 
-    public MovieAdapter(Context context, ArrayList<Movie> movies) {
+    public MovieAdapter(Context context, List<Movie> movies) {
         this.context = context;
         this.movies = movies;
     }
