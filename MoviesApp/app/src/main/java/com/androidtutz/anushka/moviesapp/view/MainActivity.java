@@ -18,7 +18,15 @@ import com.androidtutz.anushka.moviesapp.service.RetrofitInstance;
 
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.List;
 
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Function;
+import io.reactivex.observers.DisposableObserver;
+import io.reactivex.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -30,33 +38,24 @@ public class MainActivity extends AppCompatActivity {
     private MovieAdapter movieAdapter;
     private SwipeRefreshLayout swipeContainer;
     private Call<MovieDBResponse> call;
-
+    private DisposableObserver<Movie> observable;
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        getSupportActionBar().setTitle(" TMDb Popular Movies Today");
-
-
-        getPopularMovies();
-
+        getSupportActionBar().setTitle("TMDb Popular Movies Today");
 
         swipeContainer = findViewById(R.id.swipe_layout);
         swipeContainer.setColorSchemeResources(R.color.colorPrimary);
-        swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                getPopularMovies();
-            }
-        });
+        swipeContainer.setOnRefreshListener(this::getPopularMoviesWithRx);
 
-
+        getPopularMoviesWithRx();
     }
 
-    public void getPopularMovies() {
+    /*public void getPopularMovies() {
 
         movies = new ArrayList<>();
         MoviesDataService getMoviesDataService = RetrofitInstance.getService();
@@ -92,15 +91,65 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+    }*/
+
+    private void getPopularMoviesWithRx() {
+        movies = new ArrayList<>();
+        MoviesDataService getMoviesDataService = RetrofitInstance.getService();
+        observable = getMoviesDataService.getPopularMoviesWithRx(this.getString(R.string.api_key))
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .flatMap(movieDBResponse ->
+                        Observable.fromArray(movieDBResponse.getMovies().toArray(new Movie[0])))
+                .filter(movie -> movie.getVoteAverage() > 7.0 )
+                .subscribeWith(new DisposableObserver<Movie>() {
+
+                    @Override
+                    public void onNext(Movie movie) {
+                        movies.add(movie);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        e.printStackTrace();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        init();
+                    }
+                });
+
+        compositeDisposable.add(observable);
+
+        // Teste com map
+        /*compositeDisposable.add(
+                getMoviesDataService.getPopularMoviesWithRx(this.getString(R.string.api_key))
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .map(MovieDBResponse::getMovies)
+                        .subscribeWith(new DisposableObserver<List<Movie>>() {
+
+                            @Override
+                            public void onNext(List<Movie> movies) {
+                                MainActivity.this.movies = (ArrayList<Movie>) movies;
+                            }
+
+                            @Override
+                            public void onError(Throwable e) {
+                            }
+
+                            @Override
+                            public void onComplete() {
+                                init();
+                            }
+                        })
+        );*/
     }
 
-
     public void init() {
-
-
         recyclerView = findViewById(R.id.rvMovies);
         movieAdapter = new MovieAdapter(this, movies);
-
 
         if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
             recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
@@ -111,8 +160,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setItemAnimator(new DefaultItemAnimator());
         recyclerView.setAdapter(movieAdapter);
         movieAdapter.notifyDataSetChanged();
-
-
     }
 
     @Override
@@ -120,9 +167,12 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         if (call != null) {
             if (call.isExecuted()) {
-
                 call.cancel();
             }
+        }
+
+        if (! compositeDisposable.isDisposed()) {
+            compositeDisposable.dispose();
         }
     }
 }

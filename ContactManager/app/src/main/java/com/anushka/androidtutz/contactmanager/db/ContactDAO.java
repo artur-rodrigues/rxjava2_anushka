@@ -10,23 +10,29 @@ import com.anushka.androidtutz.contactmanager.db.entity.Contact;
 
 import java.util.List;
 
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
+
 @Dao
 public interface ContactDAO {
 
     @Insert
-    public  long addContact(Contact contact);
+    Long addContact(Contact contact);
 
     @Update
-    public void updateContact(Contact contact);
+    void updateContact(Contact contact);
 
     @Delete
-    public void deleteContact(Contact contact);
+    void deleteContact(Contact contact);
 
     @Query("select * from contacts")
-    public List<Contact> getContacts();
+    Flowable<List<Contact>> getContacts();
 
-    @Query("select * from contacts where contact_id ==:contactId")
-    public Contact getContact(long contactId);
+    /*@Query("select * from contacts")
+    List<Contact> getContacts();*/
 
+    /*@Query("select * from contacts where contact_id ==:contactId")
+    Contact getContact(long contactId);*/
 
 }
